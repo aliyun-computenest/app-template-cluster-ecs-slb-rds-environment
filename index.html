@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="计算巢是阿里云开放给企业应用服务商的服务管理平台。服务商能够在计算巢上发布私有化部署服务，为其客户提供云上软件一键部署的能力；同时也支持全托管模式的服务，赋能服务商托管其客户资源。">
+  <title>环境部署-创建Web后端环境(SLB+多台ECS服务器+RDS)的说明文档 - Aliyun 应用模板ECS单机版Web应用</title>
+
+  <link rel="shortcut icon" href="img/favicon.ico">
+
+  <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css">
+  <link rel="stylesheet" href="css/theme.css">
+  
+
+  
+
+  
+  
+
+  
+    <script src="search/main.js"></script>
+  
+
+  
+
+  <script src="js/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="nav">
+      <div class="nav-inner">
+        <div class="logo">
+          <img src="./img/logo-2x.png">
+        </div>
+        <div class="nav-list">
+          <ul>
+          
+              <li><a href="#-webslbecsrds">环境部署-创建Web后端环境(SLB+多台ECS服务器+RDS)的说明文档</a></li>
+              
+                  <li><a href="#_1">概述</a></li>
+                  
+              
+                  <li><a href="#_2">计费说明</a></li>
+                  
+              
+                  <li><a href="#ram">RAM账号所需权限</a></li>
+                  
+              
+                  <li><a href="#_3">部署流程</a></li>
+                  
+                      <li class="li-h3"><a href="#_4">访问应用管理</a></li>
+                  
+                      <li class="li-h3"><a href="#_5">部署步骤</a></li>
+                  
+                      <li class="li-h3"><a href="#_6">部署参数说明</a></li>
+                  
+                      <li class="li-h3"><a href="#_7">验证结果</a></li>
+                  
+              
+          
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="content theme-github">
+      
+      <div class="content-inner">        
+        
+        <h1 id="-webslbecsrds">环境部署-创建Web后端环境(SLB+多台ECS服务器+RDS)的说明文档</h1>
+<h2 id="_1">概述</h2>
+<p>此应用模板提供了一个基于ECS弹性伸缩组、负载均衡器和数据库的Web后端环境的方案，是一种常见的生产环境高可用服务部署方式。部署此应用时，
+用户只需要输入ECS实例密码等少量参数，即可一键部署支持负载均衡和弹性伸缩的Web后端环境。</p>
+<p>部署完成的应用分组包含一个或多个ECS实例、一个RDS实例、一个SLB实例和一个弹性伸缩组。
+- ECS实例自动加入SLB后端服务器组和弹性伸缩组。
+- ECS实例的Ip自己加入到RDS实例的安全白名单中
+- 默认创建的弹性配置不会进行自动伸缩。
+- SLB实例绑定弹性公网IP提供公网服务，ECS实例不开公网提高安全性。
+- 弹性伸缩组与SLB实例关联，伸缩组中新增的实例会自动加入SLB后端服务器组，也会自动加入应用分组。</p>
+<p>待应用部署完成后，您会获得一套包含数据库、支持负载均衡和弹性伸缩的ECS集群环境，您可以按需求修改应用：
+- 您可在创建的ECS实例中部署您的软件，推荐在"发布管理"中设置流水线，实现代码的持续集成和持续部署。
+- 您可以自行修改SLB的监听配置，比如监听端口、会话保持等等。
+- 您可以在应用管理的运维管理页面对伸缩组进行扩缩容，也可以将伸缩配置改为自动伸缩。
+- 您可以在数据库实例中设置您的数据表
+- 软件部署成功后，访问SLB实例绑定的弹性公网IP即可访问服务。</p>
+<h2 id="_2">计费说明</h2>
+<p>部署此应用的费用主要涉及：</p>
+<ul>
+<li>所选vCPU与内存规格</li>
+<li>磁盘容量</li>
+<li>公网带宽</li>
+<li>所选SLB规格</li>
+<li>所选数据库的规格</li>
+</ul>
+<p>计费方式包括：</p>
+<ul>
+<li>按量付费（小时）</li>
+<li>包年包月</li>
+</ul>
+<p>预估费用在部署前可实时看到。</p>
+<h2 id="ram">RAM账号所需权限</h2>
+<p>若您使用RAM用户创建应用，为了使用应用管理的完整功能，需要对使用的RAM用户的账号添加相应资源的权限。添加RAM权限的详细操作，请参见<a href="https://help.aliyun.com/document_detail/455313.html">为RAM用户授权</a>。</p>
+<p>为了部署此应用，所需权限如下表所示。</p>
+<table>
+<thead>
+<tr>
+<th>权限策略名称</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AliyunECSFullAccess</td>
+<td>管理云服务器服务（ECS）的权限</td>
+</tr>
+<tr>
+<td>AliyunVPCFullAccess</td>
+<td>管理专有网络（VPC）的权限</td>
+</tr>
+<tr>
+<td>AliyunROSFullAccess</td>
+<td>管理资源编排服务（ROS）的权限</td>
+</tr>
+<tr>
+<td>AliyunCloudMonitorFullAccess</td>
+<td>管理云监控（CloudMonitor）的权限</td>
+</tr>
+<tr>
+<td>AliyunESSFullAccess</td>
+<td>管理弹性伸缩服务(ESS)的权限</td>
+</tr>
+<tr>
+<td>AliyunSLBFullAccess</td>
+<td>管理负载均衡服务（SLB）的权限</td>
+</tr>
+<tr>
+<td>AliyunRDSFullAccess</td>
+<td>管理云数据库服务(RDS)的权限</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_3">部署流程</h2>
+<h3 id="_4">访问应用管理</h3>
+<p>应用管理可以从三个入口访问：</p>
+<ul>
+<li><a href="https://ecs.console.aliyun.com/app/list">ECS控制台入口</a></li>
+<li><a href="https://oos.console.aliyun.com/app/list">系统管理与运维服务OOS入口</a></li>
+<li><a href="https://computenest.console.aliyun.com/app/list">计算巢入口</a></li>
+</ul>
+<h3 id="_5">部署步骤</h3>
+<ol>
+<li>访问应用管理控制台，点击“创建应用”后选择“通过模板创建”，再选择“环境部署-创建Web后端环境(SLB+多台ECS服务器+RDS)”模板，点击“使用模板”</li>
+<li>输入应用名称、应用描述后，点击“添加分组”</li>
+<li>输入部署参数，保存分组。保存前可以预览费用明细和参数。<ul>
+<li>设置分组地域和分组名称，选择付费模式
+  <img src="1.jpg" width="1100" height="800" align="bottom"/></li>
+<li>选择ECS的相关配置
+  <img src="2.jpg" width="1100" height="800" align="bottom"/>
+  <img src="3.jpg" width="1100" height="800" align="bottom"/></li>
+<li>选择SLB的相关配置
+  <img src="4.jpg" width="1100" height="400" align="bottom"/></li>
+<li>选择数据库的相关配置
+  <img src="5.jpg" width="1100" height="400" align="bottom"/>
+  <img src="6.jpg" width="1100" height="400" align="bottom"/></li>
+<li>选择可用区和网络配置
+  <img src="6.jpg" width="1100" height="400" align="bottom"/></li>
+<li>预览费用明细和参数
+  <img src="7.jpg" width="1100" height="400" align="bottom"/></li>
+</ul>
+</li>
+<li>输入应用高级设置后，点击创建</li>
+</ol>
+<h3 id="_6">部署参数说明</h3>
+<p>您在创建应用分组的过程中，需要配置相关信息。下文介绍该应用模板输入参数的详细信息。</p>
+<table>
+<thead>
+<tr>
+<th>参数组</th>
+<th>参数项</th>
+<th>示例</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>付费类型配置</td>
+<td>付费类型</td>
+<td>按量付费 或 包年包月</td>
+<td></td>
+</tr>
+<tr>
+<td>ECS配置</td>
+<td>实例类型</td>
+<td>ecs.g6.large</td>
+<td>实例规格，可以根据实际需求选择</td>
+</tr>
+<tr>
+<td>ECS配置</td>
+<td>系统盘类型</td>
+<td>cloud_essd</td>
+<td></td>
+</tr>
+<tr>
+<td>ECS配置</td>
+<td>系统盘大小</td>
+<td>120GB</td>
+<td></td>
+</tr>
+<tr>
+<td>ECS配置</td>
+<td>实例密码</td>
+<td></td>
+<td>登录密码</td>
+</tr>
+<tr>
+<td>SLB配置</td>
+<td>规格</td>
+<td>slb.s1.small</td>
+<td>SLB实例规格</td>
+</tr>
+<tr>
+<td>SLB配置</td>
+<td>负载均衡公网带宽</td>
+<td>1</td>
+<td>公网带宽</td>
+</tr>
+<tr>
+<td>SLB配置</td>
+<td>后端映射端口</td>
+<td>80</td>
+<td>后端映射端口</td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>数据库实例引擎类型</td>
+<td>MYSQL</td>
+<td></td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>数据库实例引擎版本</td>
+<td>5.7</td>
+<td></td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>实例规格</td>
+<td>rds.mysql.s1.small</td>
+<td>实例规格，可以根据实际需求选择</td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>实例存储</td>
+<td>200</td>
+<td>实例存储空间，可以根据实际需求选择</td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>实例存储类型</td>
+<td>cloud_essd</td>
+<td></td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>实例系列</td>
+<td>高可用版</td>
+<td></td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>数据库账号名称</td>
+<td>automation</td>
+<td></td>
+</tr>
+<tr>
+<td>数据库配置</td>
+<td>数据库密码</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>可用区配置</td>
+<td>可用区</td>
+<td>杭州可用区K</td>
+<td></td>
+</tr>
+<tr>
+<td>网络配置</td>
+<td>是否新建VPC</td>
+<td>是</td>
+<td>是否创建一个新VPC</td>
+</tr>
+<tr>
+<td>网络配置</td>
+<td>专有网络IPv4网段</td>
+<td>192.168.0.0/16</td>
+<td>VPC的ip地址段范围</td>
+</tr>
+<tr>
+<td>网络配置</td>
+<td>交换机子网网段</td>
+<td>192.168.0.0/24</td>
+<td>交换机子网网段</td>
+</tr>
+<tr>
+<td>网络配置</td>
+<td>现有VPC的实例ID</td>
+<td>vpc-xxx</td>
+<td></td>
+</tr>
+<tr>
+<td>网络配置</td>
+<td>现有网络交换机ID</td>
+<td>vsw-xxx</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">验证结果</h3>
+<ol>
+<li>查看应用。应用创建成功后，环境部署时间大约需要1分钟。状态变为“已部署”即为部署完成
+   <img src="8.jpg" width="900" height="600" align="bottom"/></li>
+<li>应用分组部署完成后，您可以在"资源管理"标签下看到创建的所有资源。
+   <img src="8.jpg" width="1500" height="500" align="bottom"/></li>
+<li>在资源中部署好您的软件，就可以访问您自己的服务了。 注意如果您的服务使用了8080外的其他端口，需要在安全组中放开该端口的入方向访问。在资源管理中可以找到安全组，点击修改安全组规则。</li>
+</ol>
+        
+      </div>
+
+      <div class="copyrights">© 2009-2022 Aliyun.com 版权所有</div>
+    </div>
+  </div>
+  
+  <!--
+  MkDocs version      : 1.5.3
+  Docs Build Date UTC : 2023-11-09 11:50:24.838703+00:00
+  -->
+</body>
+</html>
