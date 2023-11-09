@@ -15,8 +15,7 @@ jobs:
       - run: pip install mkdocs-aliyun-computenest
       - run: mkdocs gh-deploy --force --clean --verbose
       - run: |
-          REPO_NAME=$GITHUB_REPOSITORY
-          curl -X POST -H "Content-Type: application/json" -d "{"ServiceDocRepoNames":["$REPO_NAME"]}" 
+          curl -X POST -H "Content-Type: application/json" 
           "http://1119821156893882.eventbridge.ap-southeast-1.aliyuncs.com/webhook/putEvents?token=d55e5a80bc484cc39887b2df02f22422c93f143b1a7443e7895b308e50133bbeb2e1e5e8c2d146f9b99dc9e6c6e4d68a86e5e3188d914e91a29c69e102aef513"
           
         
